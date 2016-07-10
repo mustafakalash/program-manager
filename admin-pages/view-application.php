@@ -19,20 +19,31 @@
     ";
   } else {
     $program = $existing_app->program;
-    $program_name = $wpdb->get_row("
-      SELECT `name` FROM $program_table_name WHERE `token` = '$program';
-    ")->name;
+    $program = $wpdb->get_row("
+      SELECT * FROM $program_table_name WHERE `token` = '$program';
+    ");
     if(isset($_POST['del_app'])) {
       echo "
         <div class='notice'>
           <p>
-            Are you sure that you want to remove the application from <strong>$existing_app->first_name $existing_app->last_name</strong> for the program <strong>$program_name</strong>?
+            Are you sure that you want to remove the application from <strong>$existing_app->first_name $existing_app->last_name</strong> for the program <strong>$program->name</strong>?
             <br />
-            <a href='?page=pm-program-manager&amp;pm_page=view-applications&amp;program=$program&amp;del_app=$token&amp;confirm_del=1'>Confirm deletion.</a>
+            <a href='?page=pm-program-manager&amp;pm_page=view-applications&amp;program=$program->token&amp;del_app=$token&amp;confirm_del=1'>Confirm deletion.</a>
           </p>
         </div>
       ";
     } elseif(isset($_POST['approve_app'])) {
+      if($existing_app->approved != 1) {
+        $wpdb->update(
+          $program_table_name,
+          array(
+            'filled_slots' => $program->filled_slots+1,
+          ),
+          array(
+            'token' => $program->token
+          )
+        );
+      }
       $wpdb->update(
         $application_table_name,
         array(
@@ -44,10 +55,21 @@
       );
       echo "
         <div class='updated'>
-          <p>The application from <strong>$existing_app->first_name $existing_app->last_name</strong> for the program <strong>$program_name</strong> has been approved.</p>
+          <p>The application from <strong>$existing_app->first_name $existing_app->last_name</strong> for the program <strong>$program->name</strong> has been approved.</p>
         </div>
       ";
     } elseif(isset($_POST['deny_app'])) {
+      if($existing_app->approved == 1) {
+        $wpdb->update(
+          $program_table_name,
+          array(
+            'filled_slots' => $program->filled_slots-1,
+          ),
+          array(
+            'token' => $program->token
+          )
+        );
+      }
       $wpdb->update(
         $application_table_name,
         array(
@@ -59,7 +81,7 @@
       );
       echo "
         <div class='updated'>
-          <p>The application from <strong>$existing_app->first_name $existing_app->last_name</strong> for the program <strong>$program_name</strong> has been denied.</p>
+          <p>The application from <strong>$existing_app->first_name $existing_app->last_name</strong> for the program <strong>$program->name</strong> has been denied.</p>
         </div>
       ";
     }
@@ -116,7 +138,7 @@
          </th>
          <td>
            <select name="program" disabled>
-             <option value="<? echo $program; ?>"><? echo $program_name; ?></option>
+             <option value="<? echo $program->token; ?>"><? echo $program->name; ?></option>
            </select>
          </td>
        </tr>

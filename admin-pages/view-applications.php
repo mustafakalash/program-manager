@@ -4,8 +4,10 @@
   $program_table_name = $wpdb->prefix.'pm_programs';
 
   $program = $wpdb->_real_escape($_GET['program']);
-  $program_name = $wpdb->get_row("SELECT `name` FROM $program_table_name WHERE `token` = '$program';")->name;
-  if(!isset($program_name)) {
+  $program = $wpdb->get_row("
+    SELECT * FROM $program_table_name WHERE `token` = '$program';
+  ");
+  if(!isset($program)) {
     echo "
       <div class='error'>
         <p>
@@ -21,7 +23,7 @@
     ";
     $where = [];
     $where[] = "
-      `program` = '$program'
+      `program` = '$program->token'
     ";
     if(isset($_GET['s'])) {
       $query = $wpdb->_real_escape($_GET['s']);
@@ -61,7 +63,7 @@
     $properties = array(
       'page' =>'pm-program-manager',
       'pm_page' => 'view-applications',
-      'program' => $program,
+      'program' => $program->token,
       'orderby' => $orderby,
       'orderdir' => $orderdir,
       's' => $_GET['s'],
@@ -75,19 +77,30 @@
       ");
       if(isset($existing_app)) {
         if(isset($_GET['confirm_del'])) {
+          if($existing_app->approved == 1) {
+            $wpdb->update(
+              $program_table_name,
+              array(
+                'filled_slots' => $program->filled_slots-1,
+              ),
+              array(
+                'token' => $program->token
+              )
+            );
+          }
           $wpdb->delete($application_table_name, array(
             'token' => $token
           ));
           echo "
             <div class='updated'>
-              <p>The application from <strong>$existing_app->first_name $existing_app->last_name</strong> for the program <strong>$program_name</strong> has been removed.</p>
+              <p>The application from <strong>$existing_app->first_name $existing_app->last_name</strong> for the program <strong>$program->name</strong> has been removed.</p>
             </div>
           ";
         } else {
           echo "
             <div class='notice'>
               <p>
-                Are you sure that you want to remove the application from <strong>$existing_app->first_name $existing_app->last_name</strong> for the program <strong>$program_name</strong>?
+                Are you sure that you want to remove the application from <strong>$existing_app->first_name $existing_app->last_name</strong> for the program <strong>$program->name</strong>?
                 <br />
                 <a href='?"; $newproperties = $properties; $newproperties['del_app'] = $token; $newproperties['confirm_del'] = 1; echo http_build_query($newproperties, '', '&amp;'); echo "'>Confirm deletion.</a>
               </p>
@@ -101,6 +114,17 @@
         SELECT * FROM $application_table_name WHERE `token` = '$token';
       ");
       if(isset($existing_app)) {
+        if($existing_app->approved != 1) {
+          $wpdb->update(
+            $program_table_name,
+            array(
+              'filled_slots' => $program->filled_slots+1,
+            ),
+            array(
+              'token' => $program->token
+            )
+          );
+        }
         $wpdb->update(
           $application_table_name,
           array(
@@ -112,7 +136,7 @@
         );
         echo "
           <div class='updated'>
-            <p>The application from <strong>$existing_app->first_name $existing_app->last_name</strong> for the program <strong>$program_name</strong> has been approved.</p>
+            <p>The application from <strong>$existing_app->first_name $existing_app->last_name</strong> for the program <strong>$program->name</strong> has been approved.</p>
           </div>
         ";
       }
@@ -122,6 +146,17 @@
         SELECT * FROM $application_table_name WHERE `token` = '$token';
       ");
       if(isset($existing_app)) {
+        if($existing_app->approved == 1) {
+          $wpdb->update(
+            $program_table_name,
+            array(
+              'filled_slots' => $program->filled_slots-1,
+            ),
+            array(
+              'token' => $program->token
+            )
+          );
+        }
         $wpdb->update(
           $application_table_name,
           array(
@@ -133,7 +168,7 @@
         );
         echo "
           <div class='updated'>
-            <p>The application from <strong>$existing_app->first_name $existing_app->last_name</strong> for the program <strong>$program_name</strong> has been denied.</p>
+            <p>The application from <strong>$existing_app->first_name $existing_app->last_name</strong> for the program <strong>$program->name</strong> has been denied.</p>
           </div>
         ";
       }
@@ -143,7 +178,7 @@
 ?>
 
 <h1>
-  '<? echo $program_name; ?>' Applications
+  '<? echo $program->name; ?>' Applications
 </h1>
 <form method="get">
   <?
