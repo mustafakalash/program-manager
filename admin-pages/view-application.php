@@ -87,29 +87,29 @@
      <tbody>
        <tr class="form-field form-required">
          <th scope="row">
-           <label for="name">
+           <label for="first_name">
             First Name
             <span class="description">(required)</span>
            </label>
          </th>
          <td>
-           <input value="<? echo $application->first_name; ?>" name="name" type="text" maxlength="255" required disabled />
+           <input value="<? echo $application->first_name; ?>" name="first_name" type="text" maxlength="255" required disabled />
          </td>
        </tr>
        <tr class="form-field form-required">
          <th scope="row">
-           <label for="name">
+           <label for="last_name">
             Last Name
             <span class="description">(required)</span>
            </label>
          </th>
          <td>
-           <input value="<? echo $application->last_name; ?>" name="name" type="text" maxlength="255" required disabled />
+           <input value="<? echo $application->last_name; ?>" name="last_name" type="text" maxlength="255" required disabled />
          </td>
        </tr>
        <tr class="form-field form-required">
          <th scope="row">
-           <label for="slots">
+           <label for="program">
             Program
             <span class="description">(required)</span>
            </label>
@@ -122,7 +122,7 @@
        </tr>
        <tr class="form-field form-required">
          <th scope="row">
-           <label for="slots">
+           <label for="approved">
             Status
             <span class="description">(required)</span>
            </label>

@@ -8,8 +8,8 @@
     SELECT * FROM $program_table_name
   ";
   $where = [];
-  if(isset($_GET['s'])) {
-    $query = $wpdb->_real_escape($_GET['s']);
+  if(isset($_GET['pm_s'])) {
+    $query = $wpdb->_real_escape($_GET['pm_s']);
     $where[] = "
       `name` LIKE '%$query%'
     ";
@@ -44,53 +44,70 @@
   }
 
   $properties = array(
-    'page' =>'pm-program-manager',
     'pm_page' => 'view-programs',
     'orderby' => $orderby,
     'orderdir' => $orderdir,
-    's' => $_GET['s'],
+    'pm_s' => $_GET['pm_s'],
     'hidefull' => $_GET['hidefull']
   );
-
-  if(isset($_GET['del_program'])) {
-    $token = $wpdb->_real_escape($_GET['del_program']);
-    $existing_program = $wpdb->get_row("
-      SELECT * FROM $program_table_name WHERE `token` = '$token';
-    ");
-    if(isset($existing_program)) {
-      if(isset($_GET['confirm_del'])) {
-        $wpdb->delete($program_table_name, array(
-          'token' => $token
-        ));
-        $wpdb->delete($application_table_name, array(
-          'program' => $token
-        ));
-        echo "
-          <div class='updated'>
-            <p>The program <strong>$existing_program->name</strong> and all of its applications have been removed.</p>
-          </div>
-        ";
-      } else {
-        echo "
-          <div class='notice'>
-            <p>
-              Are you sure that you want to remove <strong>$existing_program->name</strong> and all of its applications?
-              <br />
-              <a href='?"; $newproperties = $properties; $newproperties['del_program'] = $token; $newproperties['confirm_del'] = 1; echo http_build_query($newproperties, '', '&amp;'); echo "'>Confirm deletion.</a>
-            </p>
-          </div>
-        ";
-      }
-    }
-  }
 
   $programs = $wpdb->get_results(implode(" ", $sql).';');
 ?>
 
-<h1>
-  Programs
-  <a class="page-title-action" href="?page=pm-program-manager&amp;pm_page=add-program">Add New</a>
-</h1>
+<style>
+  table.fixed {
+    table-layout: fixed;
+  }
+  table.widefat {
+    border-spacing: 0;
+    width: 100%;
+    clear: both;
+    margin: 0;
+  }
+  .widefat * {
+    word-wrap: break-word;
+  }
+  .sorting-indicator {
+    display: block;
+    visibility: hidden;
+    width: 10px;
+    height: 4px;
+    margin-top: 8px;
+    margin-left: 7px;
+  }
+  .sorting-indicator::before {
+    font: 400 20px/1 dashicons;
+    display: inline-block;
+    padding: 0;
+    top: -4px;
+    left: -8px;
+    line-height: 100%;
+    position: relative;
+    vertical-align: top;
+  }
+  th.asc .sorting-indicator::before, th.desc:hover .sorting-indicator::before {
+    content: "\f142";
+  }
+  th.desc .sorting-indicator::before, th.asc:hover .sorting-indicator::before {
+    content: "\f140";
+  }
+  th.sorted .sorting-indicator, th.sortable:hover .sorting-indicator {
+    visibility: visible;
+  }
+  th.sortable a span {
+    float: left;
+  }
+  p.search-box {
+    float: right;
+    margin: 0 0 6px 0;
+  }
+  div.tablenav {
+    clear: both;
+    margin: 0 0 4px;
+  }
+</style>
+
+<h2>Program List</h2>
 <form method="get">
   <?
     while($property = current($properties)) {
@@ -105,7 +122,7 @@
     }
   ?>
   <p class="search-box">
-    <input name="s" type="search" value="<? echo $_GET['s']; ?>" />
+    <input name="pm_s" type="search" value="<? echo $_GET['pm_s']; ?>" />
     <input class="button" value="Search Programs" type="submit" />
   </p>
   <div class="tablenav top">
@@ -143,18 +160,14 @@
             echo "
               <tr>
                 <td>
-                  <strong>
-                    <a href='?page=pm-program-manager&amp;pm_page=view-applications&amp;program=$program->token'>$program->name</a>
+                  <strong>";
+                  if($slots !== 'FULL') {
+                    echo "<a href='?pm_page=add-application&amp;program=$program->token'>$program->name</a>";
+                  } else {
+                    echo $program->name;
+                  }
+                  echo "
                   </strong>
-                  <div class='row-actions'>
-                    <span class='edit'>
-                      <a href='?page=pm-program-manager&amp;pm_page=edit-program&amp;program=$program->token'>Edit</a>
-                      |
-                    </span>
-                    <span class='delete'>
-                      <a class='submitdelete' href='?"; $newproperties = $properties; $newproperties['del_program'] = $program->token; echo http_build_query($newproperties, '', '&amp;'); echo "'>Delete</a>
-                    </span>
-                  </div>
                 </td>
                 <td>
                   $slots
