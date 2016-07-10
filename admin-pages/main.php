@@ -9,6 +9,9 @@
     case 'view-applications':
       $page = 'view-applications';
       break;
+    case 'view-application':
+      $page = 'view-application';
+      break;
     default:
       $page = 'view-programs';
       break;

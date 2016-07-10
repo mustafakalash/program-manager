@@ -3,50 +3,18 @@
   $program_table_name = $wpdb->prefix.'pm_programs';
   $application_table_name = $wpdb->prefix.'pm_applications';
 
-  if(isset($_GET['del_program'])) {
-    $token = $wpdb->_real_escape($_GET['del_program']);
-    $existing_program = $wpdb->get_row("
-      SELECT * FROM $program_table_name WHERE `token` = '$token';
-    ");
-    if(isset($existing_program)) {
-      if(isset($_GET['confirm_del'])) {
-        $wpdb->delete($program_table_name, array(
-          'token' => $token
-        ));
-        $wpdb->delete($application_table_name, array(
-          'program' => $token
-        ));
-        echo "
-          <div class='updated'>
-            <p>The program <strong>$existing_program->name</strong> and all of its applications have been removed.</p>
-          </div>
-        ";
-      } else {
-        echo "
-          <div class='notice'>
-            <p>
-              Are you sure that you want to remove <strong>$existing_program->name</strong> and all of its applications?
-              <br />
-              <a href='?page=pm-program-manager&amp;del_program=$token&amp;confirm_del=1'>Confirm deletion.</a>
-            </p>
-          </div>
-        ";
-      }
-    }
-  }
-
   $sql = [];
   $sql[] = "
     SELECT * FROM $program_table_name
   ";
   $where = [];
-  if(isset($_POST['s'])) {
-    $query = $wpdb->_real_escape($_POST['s']);
+  if(isset($_GET['s'])) {
+    $query = $wpdb->_real_escape($_GET['s']);
     $where[] = "
       `name` LIKE '%$query%'
     ";
   }
-  if(isset($_POST['hidefull'])) {
+  if(isset($_GET['hidefull'])) {
     $where[] = "
       `slots` > `filled_slots`
     ";
@@ -74,6 +42,48 @@
     $orderdir = 'DESC';
     $neworderdir = 'ASC';
   }
+
+  $properties = array(
+    'page' =>'pm-program-manager',
+    'pm_page' => 'view-programs',
+    'orderby' => $orderby,
+    'orderdir' => $orderdir,
+    's' => $_GET['s'],
+    'hidefull' => $_GET['hidefull']
+  );
+
+  if(isset($_GET['del_program'])) {
+    $token = $wpdb->_real_escape($_GET['del_program']);
+    $existing_program = $wpdb->get_row("
+      SELECT * FROM $program_table_name WHERE `token` = '$token';
+    ");
+    if(isset($existing_program)) {
+      if(isset($_GET['confirm_del'])) {
+        $wpdb->delete($program_table_name, array(
+          'token' => $token
+        ));
+        $wpdb->delete($application_table_name, array(
+          'program' => $token
+        ));
+        echo "
+          <div class='updated'>
+            <p>The program <strong>$existing_program->name</strong> and all of its applications have been removed.</p>
+          </div>
+        ";
+      } else {
+        echo "
+          <div class='notice'>
+            <p>
+              Are you sure that you want to remove <strong>$existing_program->name</strong> and all of its applications?
+              <br />
+              <a href='?"; $newproperties = $properties; $newproperties['del_program'] = $token; $newproperties['confirm_del'] = 1; echo http_build_query($newproperties, '', '&amp;'); echo "'>Confirm deletion.</a>
+            </p>
+          </div>
+        ";
+      }
+    }
+  }
+
   $programs = $wpdb->get_results(implode(" ", $sql).';');
 ?>
 
@@ -81,14 +91,23 @@
   Programs
   <a class="page-title-action" href="?page=pm-program-manager&amp;pm_page=add-program">Add New</a>
 </h1>
-<form method="post">
+<form method="get">
+  <?
+    while($property = current($properties)) {
+      $key = key($properties);
+      echo "
+        <input type='hidden' name='$key' value='$property' />
+      ";
+      next($properties);
+    }
+  ?>
   <p class="search-box">
-    <input name="s" type="search" />
+    <input name="s" type="search" value="<? echo $_GET['s']; ?>" />
     <input class="button" value="Search Programs" type="submit" />
   </p>
   <div class="tablenav top">
     <label>
-      <input name="hidefull" type="checkbox" <? if(isset($_POST['hidefull'])) { echo "checked"; } ?> />
+      <input name="hidefull" type="checkbox" <? if(isset($_GET['hidefull'])) { echo "checked"; } ?> />
       Hide full programs
     </label>
     <input class="button action" value="Apply" type="submit" />
@@ -97,13 +116,13 @@
     <thead>
       <tr>
         <th class="sortable <? if($orderby === 'name') { echo 'sorted '; } echo strtolower($orderdir); ?>">
-          <a href="?page=pm-program-manager&amp;orderby=name&amp;orderdir=<? echo $neworderdir ?>">
+          <a href="?<? $newproperties = $properties; $newproperties['orderby'] = 'name'; $newproperties['orderdir'] = $neworderdir; echo http_build_query($newproperties, '', '&amp;'); ?>">
             <span>Program</span>
             <span class="sorting-indicator"></span>
           </a>
         </th>
         <th class="sortable <? if($orderby === 'slots') { echo 'sorted '; } echo strtolower($orderdir); ?>">
-          <a href="?page=pm-program-manager&amp;orderby=slots&amp;orderdir=<? echo $neworderdir ?>">
+          <a href="?<? $newproperties = $properties; $newproperties['orderby'] = 'slots'; $newproperties['orderdir'] = $neworderdir; echo http_build_query($newproperties, '', '&amp;'); ?>">
             <span>Remaining Slots</span>
             <span class="sorting-indicator"></span>
           </a>
@@ -130,7 +149,7 @@
                       |
                     </span>
                     <span class='delete'>
-                      <a class='submitdelete' href='?page=pm-program-manager&amp;del_program=$program->token'>Delete</a>
+                      <a class='submitdelete' href='?"; $newproperties = $properties; $newproperties['del_program'] = $program->token; echo http_build_query($newproperties, '', '&amp;'); echo "'>Delete</a>
                     </span>
                   </div>
                 </td>
